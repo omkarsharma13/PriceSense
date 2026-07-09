@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PriceSense Premium | Demo</title>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="dashboard-container">
+    <header>
+        <h1>⚡ PriceSense Dashboard</h1>
+        <p>Real-time Quick Commerce Pricing Intelligence Engine</p>
+    </header>
+
+    <div class="panel">
+        <div class="search-wrapper">
+            <div class="search-input-container">
+                <input type="text" id="searchBox" placeholder="Enter product name (e.g. Dairy Milk, Amul Butter, Bread)" onkeydown="if(event.key === 'Enter') search()">
+            </div>
+            <button class="search-btn" onclick="search()">Gather Intel</button>
+        </div>
+
+        <div id="loader" class="loading-wrapper">
+            <div class="spinner"></div>
+            <div class="terminal">
+                <div class="terminal-line" id="term1">> Initializing headless browser instances...</div>
+                <div class="terminal-line" id="term2">> Bypassing Cloudflare protections on Blinkit & Zepto...</div>
+                <div class="terminal-line" id="term3">> Scraping live prices & aggregating logic...</div>
+            </div>
+        </div>
+
+        <div id="resultsArea" class="results-grid" style="display: none;">
+            <!-- Data Table -->
+            <div class="table-container">
+                <table id="resultTable">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Blinkit</th>
+                            <th>Zepto</th>
+                            <th>Instamart</th>
+                            <th>Verdict</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- Graph Area -->
+            <div class="chart-container panel">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let chart;
+
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.font.family = "'Inter', sans-serif";
+
+function triggerTerminal() {
+    document.getElementById("term1").style.animation = 'none';
+    document.getElementById("term2").style.animation = 'none';
+    document.getElementById("term3").style.animation = 'none';
+    
+    setTimeout(() => {
+        document.getElementById("term1").style.animation = 'typing 0.5s forwards';
+        document.getElementById("term2").style.animation = 'typing 0.5s forwards 0.6s';
+        document.getElementById("term3").style.animation = 'typing 0.5s forwards 1.2s';
+    }, 50);
+}
+
+function search() {
+    const query = document.getElementById("searchBox").value.trim();
+    if(!query) return;
+
+    // UI State: Loading
+    document.getElementById("resultsArea").style.display = 'none';
+    document.getElementById("loader").style.display = 'flex';
+    triggerTerminal();
+
+    fetch(`/search?q=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(data => {
+            // UI State: Loaded
+            document.getElementById("loader").style.display = 'none';
+            document.getElementById("resultsArea").style.display = 'grid';
+            
+            const tbody = document.querySelector("#resultTable tbody");
+            tbody.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No intelligent price points found. Try another query.</td></tr>";
+                if(chart) chart.destroy();
+                return;
+            }
+
+            let labels = [];
+            let blinkit = [];
+            let zepto = [];
+            let instamart = [];
+
+            // Add rows dynamically
+            data.forEach((p, index) => {
+                labels.push(p.name);
+                blinkit.push(p.blinkit);
+                zepto.push(p.zepto);
+                instamart.push(p.instamart);
+
+                const row = document.createElement('tr');
+                
+                // Determine CSS classes for prices to highlight the cheapest
+                const bClass = (p.cheapest === 'Blinkit') ? 'price-blinkit badge-winner' : 'price-blinkit';
+                const zClass = (p.cheapest === 'Zepto') ? 'price-zepto badge-winner' : 'price-zepto';
+                const iClass = (p.cheapest === 'Instamart') ? 'price-instamart badge-winner' : 'price-instamart';
+
+                row.innerHTML = `
+                    <td class="product-name">${p.name}</td>
+                    <td><span class="${bClass}">₹${p.blinkit}</span></td>
+                    <td><span class="${zClass}">₹${p.zepto}</span></td>
+                    <td><span class="${iClass}">₹${p.instamart}</span></td>
+                    <td><span class="badge badge-winner">🏆 ${p.cheapest}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            drawChart(labels, blinkit, zepto, instamart);
+        }).catch(err => {
+            console.error(err);
+            document.getElementById("loader").innerHTML = "<div style='color: #ef4444;'>Engine failure. Real-time gathering blocked.</div>";
+        });
+}
+
+function drawChart(labels, b, z, i) {
+    const ctx = document.getElementById('priceChart').getContext('2d');
+
+    if (chart) {
+        chart.destroy();
+    }
+
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                { 
+                    label: 'Blinkit', 
+                    data: b, 
+                    backgroundColor: 'rgba(252, 211, 77, 0.8)',
+                    borderColor: 'rgba(252, 211, 77, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                },
+                { 
+                    label: 'Zepto', 
+                    data: z, 
+                    backgroundColor: 'rgba(192, 132, 252, 0.8)',
+                    borderColor: 'rgba(192, 132, 252, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                },
+                { 
+                    label: 'Instamart', 
+                    data: i, 
+                    backgroundColor: 'rgba(253, 186, 116, 0.8)',
+                    borderColor: 'rgba(253, 186, 116, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#94a3b8', font: {family: 'Inter'} }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#94a3b8' }
+                },
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#94a3b8' }
+                }
+            }
+        }
+    });
+}
+</script>
+
+</body>
+</html>
