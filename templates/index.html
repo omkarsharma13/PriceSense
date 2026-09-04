@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        PriceSense Premium | Demo
+    </title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Font -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <!-- Existing PriceSense CSS -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    <style>
+
+        /* =================================================
+           PRICE SOURCE LABELS
+        ================================================== */
+
+        .price-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .price-live {
+            font-weight: 600;
+        }
+
+        .price-estimated {
+            font-weight: 600;
+            opacity: 0.75;
+        }
+
+        .source-label {
+            font-size: 10px;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
+        .source-live {
+            opacity: 0.7;
+        }
+
+        .source-estimated {
+            opacity: 0.65;
+            font-style: italic;
+        }
+
+        .estimate-note {
+
+            margin-top: 15px;
+
+            padding: 12px 15px;
+
+            border-radius: 10px;
+
+            background:
+                rgba(255, 193, 7, 0.08);
+
+            border:
+                1px solid
+                rgba(255, 193, 7, 0.18);
+
+            font-size: 12px;
+
+            color: #cbd5e1;
+
+        }
+
+        .estimate-note strong {
+            color: #fbbf24;
+        }
+
+        .no-results {
+
+            text-align: center;
+
+            padding: 25px;
+
+            color: #94a3b8;
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="dashboard-container">
+
+
+    <!-- =================================================
+         HEADER
+    ================================================== -->
+
+    <header>
+
+        <h1>
+            ⚡ PriceSense Intelligence
+        </h1>
+
+        <p>
+            Real-time Quick Commerce Pricing Engine & Platform Matrix
+        </p>
+
+        <div class="header-status">
+            <span>🟢 Live Engine Active</span>
+            <span>•</span>
+            <span>4 Platforms Synced</span>
+            <span>•</span>
+            <span>GPS Location Enabled</span>
+        </div>
+
+    </header>
+
+
+    <!-- =================================================
+         MAIN PANEL
+    ================================================== -->
+
+    <div class="panel">
+
+
+        <!-- =================================================
+             SEARCH
+        ================================================== -->
+
+        <div class="search-wrapper">
+
+            <div class="location-select-container">
+
+                <select id="locationSelect" class="location-select">
+                    <option value="mumbai">📍 Mumbai (400001)</option>
+                    <option value="delhi">📍 Delhi / NCR (110001)</option>
+                    <option value="bengaluru">📍 Bengaluru (560001)</option>
+                    <option value="gurgaon">📍 Gurgaon (122001)</option>
+                    <option value="hyderabad">📍 Hyderabad (500001)</option>
+                    <option value="kolkata">📍 Kolkata (700001)</option>
+                    <option value="chennai">📍 Chennai (600001)</option>
+                    <option value="pune">📍 Pune (411001)</option>
+                </select>
+
+            </div>
+
+
+            <div class="search-input-container">
+
+                <input
+                    type="text"
+                    id="searchBox"
+                    placeholder="Enter product name (e.g. Amul Milk, Amul Butter, Bread)"
+                    onkeydown="
+                        if (event.key === 'Enter') {
+                            search();
+                        }
+                    "
+                >
+
+            </div>
+
+
+            <button
+                class="search-btn"
+                onclick="search()"
+            >
+                Gather Intel
+            </button>
+
+        </div>
+
+
+        <!-- QUICK SEARCH PILLS -->
+        <div class="quick-pills">
+            <span class="pill-label">Popular Searches:</span>
+            <button class="pill-btn" onclick="quickSearch('Amul Milk')">🥛 Amul Milk</button>
+            <button class="pill-btn" onclick="quickSearch('Amul Butter')">🧈 Amul Butter</button>
+            <button class="pill-btn" onclick="quickSearch('Dairy Milk')">🍫 Dairy Milk</button>
+            <button class="pill-btn" onclick="quickSearch('Brown Bread')">🍞 Brown Bread</button>
+            <button class="pill-btn" onclick="quickSearch('Eggs')">🥚 Eggs</button>
+            <button class="pill-btn" onclick="quickSearch('Coca Cola')">🥤 Coca Cola</button>
+        </div>
+
+
+        <!-- =================================================
+             LOADER
+        ================================================== -->
+
+        <div
+            id="loader"
+            class="loading-wrapper"
+            style="display: none;"
+        >
+
+            <div class="spinner"></div>
+
+            <div class="terminal">
+
+                <div
+                    class="terminal-line"
+                    id="term1"
+                >
+                    &gt; Initializing browser automation...
+                </div>
+
+                <div
+                    class="terminal-line"
+                    id="term2"
+                >
+                    &gt; Loading dynamic product pages...
+                </div>
+
+                <div
+                    class="terminal-line"
+                    id="term3"
+                >
+                    &gt; Extracting and comparing available prices...
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             RESULTS
+        ================================================== -->
+
+        <div
+            id="resultsArea"
+            class="results-grid"
+            style="display: none;"
+        >
+
+            <!-- KPI SUMMARY GRID -->
+            <div id="kpiGrid" class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-title">🏆 Best Value Platform</div>
+                    <div class="kpi-value" id="kpiWinner">--</div>
+                    <div class="kpi-subtext">Lowest overall live prices</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">⚡ Minimum Live Price</div>
+                    <div class="kpi-value" id="kpiMinPrice">--</div>
+                    <div class="kpi-subtext">Best single item price</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">📊 Market Average</div>
+                    <div class="kpi-value" id="kpiAvgPrice">--</div>
+                    <div class="kpi-subtext">Average live platform price</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">💰 Max Savings</div>
+                    <div class="kpi-value" id="kpiSavings">--</div>
+                    <div class="kpi-subtext">vs highest platform price</div>
+                </div>
+            </div>
+
+            <!-- =================================================
+                 TABLE
+            ================================================== -->
+
+            <div class="table-container">
+
+                <table id="resultTable">
+
+                    <thead>
+
+                        <tr>
+
+                            <th style="min-width: 260px;">
+                                Product Name
+                            </th>
+
+                            <th style="min-width: 110px;">
+                                Blinkit
+                            </th>
+
+                            <th style="min-width: 110px;">
+                                Zepto
+                            </th>
+
+                            <th style="min-width: 110px;">
+                                Instamart
+                            </th>
+
+                            <th style="min-width: 110px;">
+                                BigBasket
+                            </th>
+
+                            <th style="min-width: 140px;">
+                                Verdict
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+                    </tbody>
+
+                </table>
+
+
+                <!-- =================================================
+                     ESTIMATION LEGEND
+                ================================================== -->
+
+                <div
+                    class="estimate-note"
+                    id="estimateNote"
+                    style="display: none;"
+                >
+
+                    🟢
+                    <strong>Live</strong>
+                    = price directly extracted from the platform.
+
+                    &nbsp;&nbsp;
+
+                    🟡
+                    <strong>Estimated</strong>
+                    = average calculated from available live platform prices.
+
+                    <br><br>
+
+                    Estimated prices are shown for reference and
+                    are <strong>not used to determine the winner</strong>.
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 CHART
+            ================================================== -->
+
+            <div class="chart-card">
+
+                <div class="chart-header">
+                    📊 Price Analytics & Platform Comparison
+                </div>
+
+                <div class="chart-container">
+
+                    <canvas id="priceChart"></canvas>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+
+// =========================================================
+// GLOBAL CHART
+// =========================================================
+
+let chart = null;
+
+
+// =========================================================
+// CHART DEFAULTS
+// =========================================================
+
+Chart.defaults.color =
+    '#94a3b8';
+
+Chart.defaults.font.family =
+    "'Inter', sans-serif";
+
+
+// =========================================================
+// TERMINAL ANIMATION
+// =========================================================
+
+function triggerTerminal(locName) {
+
+    const term1 =
+        document.getElementById("term1");
+
+    const term2 =
+        document.getElementById("term2");
+
+    const term3 =
+        document.getElementById("term3");
+
+
+    if (locName) {
+        term1.innerText = `> Initializing browser context for ${locName}...`;
+    }
+
+    term1.style.animation = 'none';
+
+    term2.style.animation = 'none';
+
+    term3.style.animation = 'none';
+
+
+    setTimeout(() => {
+
+        term1.style.animation =
+            'typing 0.5s forwards';
+
+        term2.style.animation =
+            'typing 0.5s forwards 0.6s';
+
+        term3.style.animation =
+            'typing 0.5s forwards 1.2s';
+
+    }, 50);
+
+}
+
+
+// =========================================================
+// PRICE FORMAT
+// =========================================================
+
+function formatPrice(number) {
+
+    if (
+        number === null ||
+        number === undefined
+    ) {
+
+        return "N/A";
+
+    }
+
+    return (
+        "₹" +
+        number.toFixed(
+            number % 1 === 0
+                ? 0
+                : 2
+        )
+    );
+
+}
+
+
+// =========================================================
+// SOURCE-AWARE PRICE HTML
+// =========================================================
+
+function renderPrice(
+    price,
+    source,
+    platform
+) {
+
+    if (
+        price === null ||
+        price === undefined ||
+        source === "unavailable"
+    ) {
+
+        return `
+            <span class="tag-source tag-unavailable">
+                Unavailable
+            </span>
+        `;
+
+    }
+
+
+    const formatted = formatPrice(price);
+
+
+    if (source === "estimated") {
+
+        return `
+            <div class="price-pill">
+
+                <span class="price-val">
+                    ${formatted}*
+                </span>
+
+                <span class="tag-source tag-estimated">
+                    Estimated
+                </span>
+
+            </div>
+        `;
+
+    }
+
+
+    return `
+        <div class="price-pill">
+
+            <span class="price-val">
+                ${formatted}
+            </span>
+
+            <span class="tag-source tag-live">
+                Live
+            </span>
+
+        </div>
+    `;
+
+}
+
+
+function quickSearch(term) {
+    const searchBox = document.getElementById("searchBox");
+    if (searchBox) {
+        searchBox.value = term;
+        search();
+    }
+}
+
+
+// =========================================================
+// SEARCH
+// =========================================================
+
+function search() {
+
+    const searchBox =
+        document.getElementById(
+            "searchBox"
+        );
+
+    const locationSelect =
+        document.getElementById(
+            "locationSelect"
+        );
+
+
+    const query =
+        searchBox.value.trim();
+
+    const location =
+        locationSelect ? locationSelect.value : "mumbai";
+
+    const locText =
+        locationSelect ? locationSelect.options[locationSelect.selectedIndex].text : "";
+
+
+    if (!query) {
+
+        return;
+
+    }
+
+
+    // -----------------------------------------------------
+    // Hide old results
+    // -----------------------------------------------------
+
+    document.getElementById(
+        "resultsArea"
+    ).style.display = "none";
+
+
+    // -----------------------------------------------------
+    // Show loader
+    // -----------------------------------------------------
+
+    document.getElementById(
+        "loader"
+    ).style.display = "flex";
+
+
+    triggerTerminal(locText);
+
+
+    // =====================================================
+    // API REQUEST
+    // =====================================================
+
+    fetch(
+        `/search?q=${encodeURIComponent(query)}&location=${encodeURIComponent(location)}`
+    )
+
+    .then(response => {
+
+        if (!response.ok) {
+
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+
+        }
+
+        return response.json();
+
+    })
+
+
+    .then(data => {
+
+        // -------------------------------------------------
+        // Hide loader
+        // -------------------------------------------------
+
+        document.getElementById(
+            "loader"
+        ).style.display = "none";
+
+
+        // -------------------------------------------------
+        // Show results
+        // -------------------------------------------------
+
+        document.getElementById(
+            "resultsArea"
+        ).style.display = "flex";
+
+        // =================================================
+        // CALCULATE KPIS
+        // =================================================
+
+        if (Array.isArray(data) && data.length > 0) {
+            let minVal = Infinity;
+            let maxVal = 0;
+            let totalLive = 0;
+            let countLive = 0;
+            let winCounts = { Blinkit: 0, Zepto: 0, Instamart: 0, BigBasket: 0 };
+
+            data.forEach(p => {
+                ['blinkit', 'zepto', 'instamart', 'bigbasket'].forEach(plat => {
+                    const price = p[plat];
+                    const src = p[`${plat}_source`];
+                    if (src === 'live' && typeof price === 'number') {
+                        if (price < minVal) minVal = price;
+                        if (price > maxVal) maxVal = price;
+                        totalLive += price;
+                        countLive++;
+                    }
+                });
+
+                if (p.cheapest && winCounts.hasOwnProperty(p.cheapest)) {
+                    winCounts[p.cheapest]++;
+                }
+            });
+
+            const topWinner = Object.keys(winCounts).reduce((a, b) => winCounts[a] >= winCounts[b] ? a : b, 'Blinkit');
+            document.getElementById('kpiWinner').innerText = topWinner;
+            document.getElementById('kpiMinPrice').innerText = minVal !== Infinity ? `₹${minVal}` : '--';
+            document.getElementById('kpiAvgPrice').innerText = countLive > 0 ? `₹${(totalLive / countLive).toFixed(1)}` : '--';
+            const diff = (maxVal > minVal && minVal !== Infinity) ? (maxVal - minVal).toFixed(0) : 0;
+            document.getElementById('kpiSavings').innerText = diff > 0 ? `Save ₹${diff}` : '₹0';
+            document.getElementById('kpiGrid').style.display = 'grid';
+        }
+
+
+        const tbody =
+            document.querySelector(
+                "#resultTable tbody"
+            );
+
+
+        tbody.innerHTML = "";
+
+
+        // =================================================
+        // ERROR
+        // =================================================
+
+        if (
+            data.error
+        ) {
+
+            tbody.innerHTML = `
+
+                <tr>
+
+                    <td
+                        colspan="6"
+                        class="no-results"
+                    >
+
+                        ${data.error}
+
+                    </td>
+
+                </tr>
+
+            `;
+
+            return;
+
+        }
+
+
+        // =================================================
+        // NO RESULTS
+        // =================================================
+
+        if (
+            !data ||
+            data.length === 0
+        ) {
+
+            tbody.innerHTML = `
+
+                <tr>
+
+                    <td
+                        colspan="6"
+                        class="no-results"
+                    >
+
+                        No live price points found.
+                        Try another product.
+
+                    </td>
+
+                </tr>
+
+            `;
+
+
+            if (chart) {
+
+                chart.destroy();
+
+                chart = null;
+
+            }
+
+            return;
+
+        }
+
+
+        // =================================================
+        // CHART ARRAYS
+        // =================================================
+
+        const fullLabels = [];
+        const shortLabels = [];
+
+        const blinkit = [];
+        const zepto = [];
+        const instamart = [];
+        const bigbasket = [];
+
+        let hasEstimates = false;
+
+        // =================================================
+        // TABLE DATA
+        // =================================================
+
+        data.forEach(product => {
+
+            fullLabels.push(product.name);
+            const truncated = product.name.length > 22
+                ? product.name.substring(0, 20) + "…"
+                : product.name;
+            shortLabels.push(truncated);
+
+            blinkit.push(product.blinkit ?? null);
+            zepto.push(product.zepto ?? null);
+            instamart.push(product.instamart ?? null);
+            bigbasket.push(product.bigbasket ?? null);
+
+            if (product.has_estimates) {
+                hasEstimates = true;
+            }
+
+            // =============================================
+            // WINNER CLASSES
+            // =============================================
+
+            const blinkitClass = product.cheapest === "Blinkit" ? "price-blinkit" : "price-blinkit";
+            const zeptoClass = product.cheapest === "Zepto" ? "price-zepto" : "price-zepto";
+            const instamartClass = product.cheapest === "Instamart" ? "price-instamart" : "price-instamart";
+            const bigbasketClass = product.cheapest === "BigBasket" ? "price-bigbasket" : "price-bigbasket";
+
+            // =============================================
+            // VERDICT
+            // =============================================
+
+            let verdict = product.cheapest;
+
+            if (verdict.startsWith("Tie:")) {
+                verdict = "🤝 " + verdict;
+            } else if (verdict !== "Unavailable") {
+                verdict = "🏆 " + verdict;
+            }
+
+            // =============================================
+            // CREATE ROW
+            // =============================================
+
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+                <td class="product-name-cell">
+                    ${product.name}
+                </td>
+
+                <td>
+                    <span class="${blinkitClass}">
+                        ${renderPrice(product.blinkit, product.blinkit_source, "Blinkit")}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="${zeptoClass}">
+                        ${renderPrice(product.zepto, product.zepto_source, "Zepto")}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="${instamartClass}">
+                        ${renderPrice(product.instamart, product.instamart_source, "Instamart")}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="${bigbasketClass}">
+                        ${renderPrice(product.bigbasket, product.bigbasket_source, "BigBasket")}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="badge badge-winner">
+                        ${verdict}
+                    </span>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+
+        // =================================================
+        // ESTIMATION NOTE
+        // =================================================
+
+        document.getElementById("estimateNote").style.display =
+            hasEstimates ? "block" : "none";
+
+        // =================================================
+        // DRAW CHART
+        // =================================================
+
+        drawChart(
+            fullLabels,
+            shortLabels,
+            blinkit,
+            zepto,
+            instamart,
+            bigbasket
+        );
+
+    })
+
+    .catch(error => {
+
+        console.error("PriceSense error:", error);
+
+        document.getElementById("loader").innerHTML = `
+            <div style="color: #ef4444; text-align: center;">
+                Engine failure. Check the terminal.
+            </div>
+        `;
+
+    });
+
+}
+
+
+// =========================================================
+// CHART
+// =========================================================
+
+function drawChart(
+    fullLabels,
+    shortLabels,
+    blinkit,
+    zepto,
+    instamart,
+    bigbasket
+) {
+
+    const canvas = document.getElementById("priceChart");
+
+    if (!canvas) {
+        return;
+    }
+
+    const ctx = canvas.getContext("2d");
+
+    if (chart) {
+        chart.destroy();
+        chart = null;
+    }
+
+    chart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: shortLabels,
+            datasets: [
+                {
+                    label: "Blinkit",
+                    data: blinkit,
+                    backgroundColor: "rgba(251, 191, 36, 0.85)",
+                    borderColor: "rgba(251, 191, 36, 1)",
+                    borderWidth: 1,
+                    borderRadius: 6
+                },
+                {
+                    label: "Zepto",
+                    data: zepto,
+                    backgroundColor: "rgba(192, 132, 252, 0.85)",
+                    borderColor: "rgba(192, 132, 252, 1)",
+                    borderWidth: 1,
+                    borderRadius: 6
+                },
+                {
+                    label: "Instamart",
+                    data: instamart,
+                    backgroundColor: "rgba(251, 146, 60, 0.85)",
+                    borderColor: "rgba(251, 146, 60, 1)",
+                    borderWidth: 1,
+                    borderRadius: 6
+                },
+                {
+                    label: "BigBasket",
+                    data: bigbasket,
+                    backgroundColor: "rgba(74, 222, 128, 0.85)",
+                    borderColor: "rgba(74, 222, 128, 1)",
+                    borderWidth: 1,
+                    borderRadius: 6
+                }
+            ]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: "top",
+                    labels: {
+                        color: "#94a3b8",
+                        font: { family: "Inter", size: 12, weight: "600" },
+                        padding: 16,
+                        usePointStyle: true,
+                        boxWidth: 8
+                    }
+                },
+                tooltip: {
+                    backgroundColor: "rgba(10, 10, 15, 0.95)",
+                    borderColor: "rgba(255, 255, 255, 0.15)",
+                    borderWidth: 1,
+                    padding: 12,
+                    titleFont: { size: 13, weight: "bold" },
+                    bodyFont: { size: 12 },
+                    callbacks: {
+                        title: function(items) {
+                            if (items && items.length > 0) {
+                                const idx = items[0].dataIndex;
+                                return fullLabels[idx] || items[0].label;
+                            }
+                            return '';
+                        },
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed.y !== null) {
+                                label += '₹' + context.parsed.y;
+                            } else {
+                                label += 'Unavailable';
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+
+            scales: {
+                x: {
+                    grid: { color: "rgba(255, 255, 255, 0.04)" },
+                    ticks: {
+                        color: "#cbd5e1",
+                        maxRotation: 0,
+                        minRotation: 0,
+                        font: { size: 11 }
+                    }
+                },
+
+                y: {
+                    beginAtZero: true,
+                    grid: { color: "rgba(255, 255, 255, 0.04)" },
+                    ticks: {
+                        color: "#94a3b8",
+                        callback: function(val) {
+                            return "₹" + val;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+}
+
+</script>
+
+
+</body>
+
+</html>
