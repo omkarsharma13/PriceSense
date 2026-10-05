@@ -117,6 +117,12 @@
 
     <header>
 
+        <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-bottom:12px;">
+            <span style="color:#cbd5e1;font-size:.9rem;">👤 {{ current_user.name }}</span>
+            <a href="{{ url_for('location') }}" style="color:#c084fc;text-decoration:none;font-weight:600;">📍 Change Location</a>
+            <a href="{{ url_for('logout') }}" style="color:#fda4af;text-decoration:none;font-weight:600;">Logout</a>
+        </div>
+
         <h1>
             ⚡ PriceSense Intelligence
         </h1>
@@ -151,15 +157,15 @@
 
             <div class="location-select-container">
 
-                <select id="locationSelect" class="location-select">
-                    <option value="mumbai">📍 Mumbai (400001)</option>
-                    <option value="delhi">📍 Delhi / NCR (110001)</option>
-                    <option value="bengaluru">📍 Bengaluru (560001)</option>
-                    <option value="gurgaon">📍 Gurgaon (122001)</option>
-                    <option value="hyderabad">📍 Hyderabad (500001)</option>
-                    <option value="kolkata">📍 Kolkata (700001)</option>
-                    <option value="chennai">📍 Chennai (600001)</option>
-                    <option value="pune">📍 Pune (411001)</option>
+                <select id="locationSelect" class="location-select" onchange="saveLocation(this.value)">
+                    <option value="mumbai" {% if selected_location == "mumbai" %}selected{% endif %}>📍 Mumbai (400001)</option>
+                    <option value="delhi" {% if selected_location == "delhi" %}selected{% endif %}>📍 Delhi / NCR (110001)</option>
+                    <option value="bengaluru" {% if selected_location == "bengaluru" %}selected{% endif %}>📍 Bengaluru (560001)</option>
+                    <option value="gurgaon" {% if selected_location == "gurgaon" %}selected{% endif %}>📍 Gurgaon (122001)</option>
+                    <option value="hyderabad" {% if selected_location == "hyderabad" %}selected{% endif %}>📍 Hyderabad (500001)</option>
+                    <option value="kolkata" {% if selected_location == "kolkata" %}selected{% endif %}>📍 Kolkata (700001)</option>
+                    <option value="chennai" {% if selected_location == "chennai" %}selected{% endif %}>📍 Chennai (600001)</option>
+                    <option value="pune" {% if selected_location == "pune" %}selected{% endif %}>📍 Pune (411001)</option>
                 </select>
 
             </div>
@@ -543,6 +549,22 @@ function quickSearch(term) {
     }
 }
 
+
+async function saveLocation(location) {
+    try {
+        const response = await fetch("/set-location", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({location})
+        });
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || "Unable to save location.");
+        }
+    } catch (error) {
+        console.error("Location save error:", error);
+    }
+}
 
 // =========================================================
 // SEARCH
